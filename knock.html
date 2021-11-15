@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="FR">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <div>
+        <h1>Annuaire</h1>
+        <input type="text" data-bind="value: searchText" />
+        <button data-bind="click: handleSearch">Chercher</button>
+        <button data-bind="click: handleList">Tout</button>
+        <div data-bind="foreach: entries">
+        <div data-bind="text: $data"></div>
+    </div>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/knockout/3.5.0/knockout-min.js"></script>
+    </div>
+    
+    <script>
+    class ViewModel {
+        searchText;
+        entries;
+    
+        constructor() {
+            this.searchText = ko.observable();
+            this.entries = ko.observableArray([]);
+        } 
+        commonData(data)
+        {
+            this.entries.removeAll();
+            for(const element of data)
+            {
+                this.entries.push(Object.values(element).join(' - '));//on reçoit un objet qu'on affiche sa valeur(element resulatant du foreach)
+            } 
+        }
+        handleList(){
+            var that=this;// pour palier au context global car this represente le viewModel
+          fetch('http://localhost:4000')//le promise
+          .then(function(response)//debut du calback
+          {//response =la reponse brut du serveur
+              return response.json();// transformation brut en json
+          })
+          .then(function(data)
+          {
+           that.commonData(data);
+          });//fin callback
+        }
+        
+        handleSearch(text) {
+            var that=this;
+            fetch('http://localhost:4000',
+            {
+                method:'post',
+                headers: {
+                    'Accept':'application/json',
+                    'content-type':'application/json'
+                },
+                body:JSON.stringify({
+                    text:this.searchText()//searchText est un observable et searchText() nous donne la valeur de l'observable
+                })
+            })
+            .then(function(response){
+                return response.json();
+            })
+            .then(function(data){
+                that.entries.removeAll();
+            for(const element of data)
+            {
+                that.entries.push(Object.values(element).join(' - '));//on reçoit un objet qu'on affiche sa valeur(element resulatant du foreach)
+               // le this etant le context global car on ne peut pas faire un new cet objet donc on passe par that
+            } 
+            })
+        }
+    }
+    (function() { // on crée l'observable pour lier le viewModel au view(pour faire le binding)
+        const viewModel = new ViewModel();// attention l'utilisation de this dans le programm , this designe l'objet crée(viewModel)
+        ko.applyBindings(viewModel);
+    })();
+    </script>
+</body>
+</html>
